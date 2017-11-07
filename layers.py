@@ -201,7 +201,8 @@ class FC(Layer):
       An ndarray of shape (N, num_outputs)
     """
     # TODO
-    pass
+    self.inputs = inputs
+    return np.matmul(inputs, self.weights) + self.bias
 
   def backward_inputs(self, grads):
     """
@@ -211,7 +212,7 @@ class FC(Layer):
       An ndarray of shape (N, num_inputs)
     """
     # TODO
-    pass
+    return np.dot(grads, self.weights)
 
   def backward_params(self, grads):
     """
@@ -221,8 +222,8 @@ class FC(Layer):
       List of params and gradient pairs.
     """
     # TODO
-    grad_weights = ...
-    grad_bias = ...
+    grad_weights = np.dot(np.transpose(grads), (np.transpose(self.inputs)))
+    grad_bias = grads
     return [[self.weights, grad_weights], [self.bias, grad_bias], self.name]
 
 
@@ -241,7 +242,8 @@ class ReLU(Layer):
       ndarray of shape (N, C, H, W).
     """
     # TODO
-    pass
+    self.inputs = inputs
+    return np.maximum(inputs, 0)
 
   def backward_inputs(self, grads):
     """
@@ -251,7 +253,11 @@ class ReLU(Layer):
       ndarray of shape (N, C, H, W).
     """
     # TODO
-    pass
+    f = lambda x: 1.0 if x > 0 else 0.0
+    f = np.vectorize(f)
+    #transform = np.fromiter((f(xi) for xi in self.inputs), self.inputs.dtype)
+    transform = f(self.inputs)
+    return grads * transform
 
 
 class SoftmaxCrossEntropyWithLogits():
@@ -270,7 +276,13 @@ class SoftmaxCrossEntropyWithLogits():
 
     """
     # TODO
-    pass
+    losses = []
+    for j in range(x.shape[1]):
+        losses.append(0)
+        for i in range(x.shape[0]):
+            losses[j] -= y[i, j]*np.log(x[i, j])
+
+    return np.average(np.array(losses))
 
   def backward_inputs(self, x, y):
     """
@@ -282,7 +294,13 @@ class SoftmaxCrossEntropyWithLogits():
     """
     # Hint: don't forget that we took the average in the forward pass
     # TODO
-    pass
+    n = x.shape[0]
+    res = np.ndarray(x.shape)
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            res[i, j] = -y[i, j] / (x[i, j] * n)
+
+    return res
 
 
 class L2Regularizer():
