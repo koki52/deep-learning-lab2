@@ -202,7 +202,7 @@ class FC(Layer):
     """
     # TODO
     self.inputs = inputs
-    return np.matmul(inputs, self.weights) + self.bias
+    return np.dot(inputs, np.transpose(self.weights)) + self.bias
 
   def backward_inputs(self, grads):
     """
@@ -222,8 +222,8 @@ class FC(Layer):
       List of params and gradient pairs.
     """
     # TODO
-    grad_weights = np.dot(np.transpose(grads), (np.transpose(self.inputs)))
-    grad_bias = grads
+    grad_weights = np.dot(np.transpose(grads), self.inputs)
+    grad_bias = np.sum(grads, axis=0)
     return [[self.weights, grad_weights], [self.bias, grad_bias], self.name]
 
 
