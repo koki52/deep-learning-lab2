@@ -255,7 +255,6 @@ class ReLU(Layer):
     # TODO
     f = lambda x: 1.0 if x > 0 else 0.0
     f = np.vectorize(f)
-    #transform = np.fromiter((f(xi) for xi in self.inputs), self.inputs.dtype)
     transform = f(self.inputs)
     return grads * transform
 
@@ -263,6 +262,12 @@ class ReLU(Layer):
 class SoftmaxCrossEntropyWithLogits():
   def __init__(self):
     self.has_params = False
+
+  @staticmethod
+  def stable_softmax(x):
+    exp_x_shifted = np.exp(x - np.max(x))
+    probs = exp_x_shifted / np.sum(exp_x_shifted)
+    return probs
 
   def forward(self, x, y):
     """
@@ -277,12 +282,14 @@ class SoftmaxCrossEntropyWithLogits():
     """
     # TODO
     losses = []
-    for j in range(x.shape[1]):
+    for i in range(x.shape[0]):
         losses.append(0)
-        for i in range(x.shape[0]):
-            losses[j] -= y[i, j]*np.log(x[i, j])
+        sx = self.stable_softmax(x[i])
+        for j in range(x.shape[1]):
+            losses[i] -= y[i, j]*np.log(sx[j])
 
     return np.average(np.array(losses))
+
 
   def backward_inputs(self, x, y):
     """
@@ -294,13 +301,11 @@ class SoftmaxCrossEntropyWithLogits():
     """
     # Hint: don't forget that we took the average in the forward pass
     # TODO
-    n = x.shape[0]
-    res = np.ndarray(x.shape)
+    sx = []
     for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            res[i, j] = -y[i, j] / (x[i, j] * n)
-
-    return res
+        sx.append(self.stable_softmax(x[i]))
+    sx = np.array(sx)
+    return (sx - y)/x.shape[0]
 
 
 class L2Regularizer():
