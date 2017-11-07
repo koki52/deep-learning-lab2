@@ -8,8 +8,8 @@ import nn
 
 import layers
 
-DATA_DIR = '/home/kivan/datasets/MNIST/'
-SAVE_DIR = "/home/kivan/source/fer/out/"
+DATA_DIR = '/home/koki/faks/dubuce/deep-learning-lab2/DATA'
+SAVE_DIR = "/home/koki/faks/dubuce/deep-learning-lab2/SAVE"
 
 config = {}
 config['max_epochs'] = 8
