@@ -1,6 +1,11 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 from tensorflow.examples.tutorials.mnist import input_data
+import numpy as np
+import skimage as ski
+import skimage.io
+import os
+import math
 
 
 def build_model(inputs, labels, num_classes):
@@ -37,6 +42,29 @@ def build_model(inputs, labels, num_classes):
     return logits, loss
 
 
+def draw_conv_filters(epoch, step, w, save_dir):
+    # C = layer.C
+    # w = layer.weights.copy()
+    num_filters = 16
+    k = 5
+    w = w.reshape(num_filters, 1, k, k)
+    w -= w.min()
+    w /= w.max()
+    border = 1
+    cols = 8
+    rows = math.ceil(num_filters / cols)
+    width = cols * k + (cols-1) * border
+    height = rows * k + (rows-1) * border
+    for i in range(1):
+        img = np.zeros([height, width])
+        for j in range(num_filters):
+                r = int(j / cols) * (k + border)
+                c = int(j % cols) * (k + border)
+                img[r:r+k, c:c+k] = w[j, i]
+        filename = 'filter_epoch_%02d_step_%06d_input_%03d.png' % (epoch, step, i)
+        ski.io.imsave(os.path.join(save_dir, filename), img)
+
+
 DATA_DIR = '/home/koki/faks/dubuce/deep-learning-lab2/DATA'
 SAVE_DIR = "/home/koki/faks/dubuce/deep-learning-lab2/SAVE"
 
@@ -55,6 +83,7 @@ y = tf.placeholder(tf.float32, [None, 10])
 logits, loss = build_model(x, y, 10)
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=1e-1)
 train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
+kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv1')[0]
 
 session = tf.Session()
 
@@ -65,11 +94,13 @@ session.run(init)
 for epoch in range(8):
     for batch_num in range(1100):
         batch = dataset.train.next_batch(50)
-        l, _ = session.run([loss, train_op], feed_dict={
+        l, filters, _ = session.run([loss, kernel, train_op], feed_dict={
             x: batch[0].reshape([-1, 28, 28, 1]),
             y: batch[1].reshape([-1, 10])})
         if batch_num % 5 == 0:
             print("epoch " + str(epoch) + ", step " + str((batch_num*50)) + "/55000, batch loss = " + str(l))
+        if batch_num % 100 == 0:
+            draw_conv_filters(epoch+1, batch_num*50, filters, SAVE_DIR)
     l = session.run(loss, feed_dict={
         x: valid_x,
         y: valid_y
