@@ -45,8 +45,6 @@ def build_model(inputs, labels, num_classes):
 
 
 def draw_conv_filters(epoch, step, w, save_dir):
-    # C = layer.C
-    # w = layer.weights.copy()
     num_filters = 16
     k = 5
     w = w.reshape(num_filters, 1, k, k)
