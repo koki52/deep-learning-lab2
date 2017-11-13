@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
+import tensorflow.contrib.metrics as metrics
 from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import skimage as ski
@@ -38,8 +39,9 @@ def build_model(inputs, labels, num_classes):
 
     logits = layers.fully_connected(net, num_classes, activation_fn=None, scope='logits')
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(labels, logits))
+    accuracy = metrics.accuracy(tf.argmax(logits, 1), tf.argmax(labels, 1))
 
-    return logits, loss
+    return logits, loss, accuracy
 
 
 def draw_conv_filters(epoch, step, w, save_dir):
@@ -80,7 +82,7 @@ test_y = dataset.test.labels
 x = tf.placeholder(tf.float32, [None, 28, 28, 1])
 y = tf.placeholder(tf.float32, [None, 10])
 
-logits, loss = build_model(x, y, 10)
+logits, loss, accuracy = build_model(x, y, 10)
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=1e-1)
 train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
 kernel = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, 'conv1')[0]
@@ -92,22 +94,22 @@ session.run(init)
 # optimizacijska petlja
 
 for epoch in range(8):
-    for batch_num in range(1100):
+    for batch_num in range(1101):
         batch = dataset.train.next_batch(50)
-        l, filters, _ = session.run([loss, kernel, train_op], feed_dict={
+        l, filters, a, _ = session.run([loss, kernel, accuracy, train_op], feed_dict={
             x: batch[0].reshape([-1, 28, 28, 1]),
             y: batch[1].reshape([-1, 10])})
         if batch_num % 5 == 0:
-            print("epoch " + str(epoch) + ", step " + str((batch_num*50)) + "/55000, batch loss = " + str(l))
+            print("epoch " + str(epoch) + ", step " + str((batch_num*50)) + "/55000, batch loss = " + str(l) + ", accuracy: " + str(a))
         if batch_num % 100 == 0:
             draw_conv_filters(epoch+1, batch_num*50, filters, SAVE_DIR)
-    l = session.run(loss, feed_dict={
+    l, a = session.run([loss, accuracy], feed_dict={
         x: valid_x,
         y: valid_y
     })
-    print("Validation loss: " + str(l))
-l = session.run(loss, feed_dict={
+    print("Validation loss: " + str(l) + ", accuracy: " + str(a))
+l, a = session.run([loss, accuracy], feed_dict={
     x: test_x,
     y: test_y
 })
-print("Test loss: " + str(l))
+print("Test loss: " + str(l) + ", accuracy: " + str(a))
